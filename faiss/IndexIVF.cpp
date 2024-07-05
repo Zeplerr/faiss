@@ -164,7 +164,8 @@ IndexIVF::IndexIVF(
           IndexIVFInterface(quantizer, nlist),
           invlists(new ArrayInvertedLists(nlist, code_size)),
           own_invlists(true),
-          code_size(code_size) {
+          code_size(code_size),
+          locks(new LockLevels()) {
     FAISS_THROW_IF_NOT(d == quantizer->d);
     is_trained = quantizer->is_trained && (quantizer->ntotal == nlist);
     // Spherical by default if the metric is inner_product
@@ -527,14 +528,19 @@ void IndexIVF::search_preassigned(
                 if (invlists->use_iterator) {
                     size_t list_size = 0;
 
+                    locks->lock_0(key);
+
                     std::unique_ptr<InvertedListsIterator> it(
                             invlists->get_iterator(key, inverted_list_context));
 
                     nheap += scanner->iterate_codes(
                             it.get(), simi, idxi, k, list_size);
 
+                    locks->unlock_0(key);
+
                     return list_size;
                 } else {
+                    locks->lock_0(key);
                     size_t list_size = invlists->list_size(key);
                     if (list_size > list_size_max) {
                         list_size = list_size_max;
@@ -568,9 +574,12 @@ void IndexIVF::search_preassigned(
                     nheap += scanner->scan_codes(
                             list_size, codes, ids, simi, idxi, k);
 
+                    locks->unlock_0(key);
+
                     return list_size;
                 }
             } catch (const std::exception& e) {
+                locks->unlock_0(key);
                 std::lock_guard<std::mutex> lock(exception_mutex);
                 exception_string =
                         demangle_cpp_symbol(typeid(e).name()) + "  " + e.what();
@@ -1104,8 +1113,34 @@ void IndexIVF::reset() {
     ntotal = 0;
 }
 
+void IndexIVF::rlock_all() {
+    for (size_t i = 0; i < invlists->nlist; i++) {
+        locks->lock_0(i);
+    }
+}
+
+void IndexIVF::unrlock_all() {
+    for (size_t i = 0; i < invlists->nlist; i++) {
+        locks->unlock_0(i);
+    }
+}
+
+void IndexIVF::wlock_all() {
+    for (size_t i = 0; i < invlists->nlist; i++) {
+        locks->lock_1(i);
+    }
+}
+
+void IndexIVF::unwlock_all() {
+    for (size_t i = 0; i < invlists->nlist; i++) {
+        locks->unlock_1(i);
+    }
+}
+
 size_t IndexIVF::remove_ids(const IDSelector& sel) {
+    wlock_all();
     size_t nremove = direct_map.remove_ids(sel, invlists);
+    unwlock_all();
     ntotal -= nremove;
     return nremove;
 }
@@ -1254,6 +1289,9 @@ void IndexIVF::copy_subset_to(
 IndexIVF::~IndexIVF() {
     if (own_invlists) {
         delete invlists;
+    }
+    if (locks) {
+        delete locks;
     }
 }
 

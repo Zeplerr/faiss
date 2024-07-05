@@ -67,6 +67,7 @@ void IndexIVFFlat::add_core(
         // each thread takes care of a subset of lists
         for (size_t i = 0; i < n; i++) {
             idx_t list_no = coarse_idx[i];
+            locks->lock_1(list_no);
 
             if (list_no >= 0 && list_no % nt == rank) {
                 idx_t id = xids ? xids[i] : ntotal + i;
@@ -78,6 +79,7 @@ void IndexIVFFlat::add_core(
             } else if (rank == 0 && list_no == -1) {
                 dm_adder.add(i, -1, 0);
             }
+            locks->unlock_1(list_no);
         }
     }
 

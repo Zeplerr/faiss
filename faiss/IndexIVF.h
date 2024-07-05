@@ -22,6 +22,7 @@
 #include <faiss/invlists/DirectMap.h>
 #include <faiss/invlists/InvertedLists.h>
 #include <faiss/utils/Heap.h>
+#include <faiss/utils/locks_levels.h>
 
 namespace faiss {
 
@@ -196,6 +197,7 @@ struct IndexIVF : Index, IndexIVFInterface {
     /** optional map that maps back ids to invlist entries. This
      *  enables reconstruct() */
     DirectMap direct_map;
+    struct LockLevels * locks;
 
     /// do the codes in the invlists encode the vectors relative to the
     /// centroids?
@@ -213,6 +215,15 @@ struct IndexIVF : Index, IndexIVFInterface {
             MetricType metric = METRIC_L2);
 
     void reset() override;
+
+    void rlock_all();
+
+    void unrlock_all();
+
+    void wlock_all();
+
+    void unwlock_all();
+
 
     /// Trains the quantizer and calls train_encoder to train sub-quantizers
     void train(idx_t n, const float* x) override;

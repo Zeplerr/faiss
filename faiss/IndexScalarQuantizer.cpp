@@ -227,6 +227,7 @@ void IndexIVFScalarQuantizer::add_core(
         // each thread takes care of a subset of lists
         for (size_t i = 0; i < n; i++) {
             int64_t list_no = coarse_idx[i];
+            locks->lock_1(list_no);
             if (list_no >= 0 && list_no % nt == rank) {
                 int64_t id = xids ? xids[i] : ntotal + i;
 
