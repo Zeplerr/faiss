@@ -17,10 +17,9 @@
 #include <faiss/IndexIVF.h>
 #include <faiss/index_io.h>
 #include <faiss/invlists/InvertedListsIOHook.h>
+#include <faiss/utils/locks_levels.h>
 
 namespace faiss {
-
-struct LockLevels;
 
 struct OnDiskOneList {
     size_t size;     // size of inverted list (entries)

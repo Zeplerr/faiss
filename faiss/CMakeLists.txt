@@ -81,6 +81,7 @@ set(FAISS_SRC
   invlists/InvertedLists.cpp
   invlists/InvertedListsIOHook.cpp
   utils/Heap.cpp
+  utils/locks_levels.cpp
   utils/WorkerThread.cpp
   utils/distances.cpp
   utils/distances_simd.cpp
@@ -185,6 +186,7 @@ set(FAISS_HEADERS
   utils/AlignedTable.h
   utils/bf16.h
   utils/Heap.h
+  utils/locks_levels.h
   utils/WorkerThread.h
   utils/distances.h
   utils/extra_distances-inl.h
